@@ -1,0 +1,187 @@
+<html>
+<head>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+    body{
+    background-image: url('images/in.jpeg')
+    }
+        #messages {
+            text-align: left;
+            width: 50%;
+            padding: 1em;
+            border: 1px solid black;
+        }
+        #kl {
+  max-width: 500px;
+  margin: auto;
+  background: white;
+  padding: 10px;
+}
+#l{
+   margin-top: 100px;
+   margin-left:30px;
+     float: left;
+
+}
+    </style>
+    <title>Sample WebSocket Client</title>
+</head>
+<body>
+<div class="card" style="width: 18rem;"  id="l">
+    <div class="card-body" >
+        <h5 class="card-title">How to play?</h5>
+        <p class="card-text">create a new game and share the game id with you friends,
+            if you have a game insert the game id in Game Code filed and GO!
+        </p>
+    </div>
+</div>
+<div class="container p-3 my-3 bg-dark text-white" id ="kl">
+    <h1>World Navigator Game</h1>
+    <div class="input-fields">
+        <label>You should enter your name</label><br>
+        <label>Your Name :</label><br>
+        <input id="Name" required  class="form-control"  /><br>
+        <button id="Connect" class="btn btn-info">Create a new game</button><br><br><br>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+            <label class="form-check-label" for="flexCheckDefault">
+                Test
+            </label>
+        </div>
+        <label>Game Code :</label><br>
+        <input id="message" class="form-control"/><br>
+        <button id="create" class="btn btn-info">Join existing game</button>
+    </div>
+</div>
+</body>
+<script>
+    const messageWindow = document.getElementById("messages");
+    const sendButton2 = document.getElementById("Connect");
+    const sendButton3 = document.getElementById("create");
+
+    const messageInput = document.getElementById("message");
+    const Name = document.getElementById("Name");
+    const test = document.getElementById("flexCheckDefault");
+
+        const socket = new WebSocket("ws://localhost:9091/socket");
+
+    var PlayerId = null;
+    var GameId = null;
+    var PlayerStatus = "North";
+    var North , East , West , South;
+
+
+    socket.binaryType = "arraybuffer";
+
+    var obj = { Method: "Connect"};
+
+
+    socket.onopen = function (event) {
+        Connect();
+    };
+
+    socket.onmessage = function (event) {
+
+         const res = JSON.parse(event.data);
+
+         if(res.Method === "Connect"){
+         ConnetClint(event)
+         }
+         else if(res.Method === "Create"){
+         CreateClint(event)
+         window.location = "/Lobby.html?PlayerId=" + PlayerId +"&GameId=" +GameId;
+
+         }
+         else if(res.Method === "Join"){
+         JoinGame(event)
+         window.location = "/Lobby.html?PlayerId=" + PlayerId +"&GameId=" +GameId;
+
+         }
+         else if(res.Method === "ReJoin"){
+         ReJoin(event);
+         }
+
+
+
+    };
+
+      sendButton2.onclick = function (event) {
+      if(Name.value != ""){
+	      var te;
+	     if(test.checked === true)
+	      te="Yes"
+		  else
+		  te = "No"
+        var obj = { Method: "Create",PlayerId: PlayerId ,Name:Name.value,Test:te};
+        sendMessage(JSON.stringify(obj));
+        messageInput.value = "";}
+    };
+
+  sendButton3.onclick = function (event) {
+        if(Name.value != ""){
+        var obj = { Method: "JoinGame",PlayerId: PlayerId,GameId:messageInput.value,Name:Name.value};
+        sendMessage(JSON.stringify(obj));
+        messageInput.value = ""}
+    };
+
+
+
+    function sendMessage(message) {
+        socket.send(message);
+    }
+
+
+    function ConnetClint(event){
+        const res = JSON.parse(event.data);
+         if(PlayerId === null ){
+            PlayerId = res.PlayerId;
+            localStorage.setItem('Here', PlayerId);
+         }
+    }
+
+      function CreateClint(event){
+        const res = JSON.parse(event.data);
+         if(GameId === null ){
+            GameId = res.GameId;
+         }
+    }
+
+      function Connect(){
+        var obj = { Method: "Connect"};
+        sendMessage(JSON.stringify(obj));
+    }
+
+    function JoinGame(event){
+       const res = JSON.parse(event.data);
+       if(res.State === "Yes"){
+       GameId = res.GameId;
+       }
+
+    }
+
+    function ReJoin(event){
+      const res = JSON.parse(event.data);
+      GameId = res.GameId;
+      PlayerId = res.PlayerId;
+  }
+
+
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+
+
+
+   return vars;
+}
+
+
+</script>
+</html>
