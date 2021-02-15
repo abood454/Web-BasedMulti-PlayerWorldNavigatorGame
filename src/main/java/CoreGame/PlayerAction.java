@@ -14,24 +14,34 @@ public class PlayerAction {
 
     if (GoDoor.isOpen() || (ActivePlayer.IsThereKey(GoDoor.GetKey()))) {
       if (map.getWinningDoors().get(GoDoor) != null) return "WIN";
+
       int NumberOfNextRoom = GoDoor.GetNextRoom(GoRoom.GetRoomNumber());
-      map.getPeople().put(ActivePlayer.GetCurrentRoom(), null);
+
+      if(map.getHere().get(map.GetNextRoom(NumberOfNextRoom)) == 2){
+        return "ThereIsFight";
+      }
+
+        map.getPeople().put(ActivePlayer.GetCurrentRoom(), null);
       map.getHere()
-          .put(ActivePlayer.getCurrentRoom(), map.getHere().get(ActivePlayer.getCurrentRoom()) + 1);
+          .put(ActivePlayer.getCurrentRoom(), map.getHere().get(ActivePlayer.getCurrentRoom()) - 1);
       ActivePlayer.ChangeCurrentRoom(map.GetNextRoom(NumberOfNextRoom));
 
-      System.out.println(map.getPeople().get(ActivePlayer.GetCurrentRoom()));
+
+      map.getHere()
+              .put(ActivePlayer.getCurrentRoom(), map.getHere().get(ActivePlayer.getCurrentRoom()) + 1);
+
+
       if (map.getPeople().get(ActivePlayer.GetCurrentRoom()) != null
-          && map.getHere().get(ActivePlayer.getCurrentRoom()) == 1) return "FIGHT";
+          && map.getHere().get(ActivePlayer.getCurrentRoom())%2 == 0) return "FIGHT";
 
       map.getPeople().put(ActivePlayer.GetCurrentRoom(), ActivePlayer);
       map.getHere()
-          .put(ActivePlayer.getCurrentRoom(), map.getHere().get(ActivePlayer.getCurrentRoom()) - 1);
+          .put(ActivePlayer.getCurrentRoom(), map.getHere().get(ActivePlayer.getCurrentRoom()) + 1);
       List<Integer> items = ActivePlayer.GetCurrentRoom().getItemsOnFloor();
 
       if (items.size() > 0) {
-        for (int i = 0; i < items.size(); i++) {
-          ActivePlayer.AddItem(items.get(i));
+        for (Integer item : items) {
+          ActivePlayer.AddItem(item);
         }
         items.clear();
         return "OpenWithItems";
@@ -81,17 +91,6 @@ public class PlayerAction {
     return seller.getKeys();
   }
 
-  public void SellSeller(Seller WallSeller, Player ActivePlayer) {}
 
-  public void Look(Player ActivePlayer) {
-    Room CurrentRoom = ActivePlayer.GetCurrentRoom();
-    String WallType = CurrentRoom.Action(ActivePlayer.PlayerFacing()).getTypeObject();
 
-    if (WallType.equals("Door")) System.out.println("Door");
-    else if (WallType.equals("Chest")) System.out.println("Chest");
-    else if (WallType.equals("Painting")) System.out.println("Painting");
-    else if (WallType.equals("Seller")) System.out.println("Seller");
-    else if (WallType.equals("Mirror")) System.out.println("You See a silhouette of you");
-    else if (WallType.equals("Wall")) System.out.println("Wall");
-  }
 }

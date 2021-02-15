@@ -110,6 +110,9 @@ public class Moves {
                    case "WIN":
                        Win(Map, player);
                        break;
+                   case "ThereIsFight":
+                       session.sendMessage(new TextMessage( Json.ThereIsFight().toString()));
+                       break;
                    default:
                        message1 = new TextMessage(Json.MoveMethod(false).toString());
                        session.sendMessage(message1);
@@ -204,7 +207,7 @@ public class Moves {
             int KeyNumber =Integer.parseInt(object.get("Key").toString()) - 1;
             double Money = player.GetMoney();
 
-            if(seller.getKeys().size() > KeyNumber && Money >= 20){
+            if(seller.getKeys().size() >= KeyNumber && Money >= 20){
                 player.AddItem(seller.GetKey(KeyNumber));
                 player.setMoney(Money - 20);
                 session.sendMessage(new TextMessage(Json.PlayerItems(player).toString()));
@@ -217,10 +220,10 @@ public class Moves {
     }
 
     public  void Structure(WebSocketSession session , JsonObject object)  throws IOException{
-    System.out.println("here");
+
         Player player = WebSocketHandler.PlayersObject.get(object.get("PlayerId").toString());
 
-        System.out.println(player.GetCurrentRoom());
+         if(player != null){
 
         Json.StructureMethod(player.GetCurrentRoom());
         String JsonString = Json.StructureMethod(player.GetCurrentRoom()).toString();
@@ -228,6 +231,7 @@ public class Moves {
         session.sendMessage(message1);
 
     }
+}
 
 
     public void DropAndLeave(WebSocketSession session , JsonObject object) {
@@ -255,18 +259,21 @@ public class Moves {
 
        if(player1.getMoney() + player1.getItems().size()*10 > player2.getMoney() + player2.getItems().size()*10){
 
-           PlayerDead(player2 , player1 , Map);
-           UpdateAllPlayers(player2.GetMoney(),object.get("GameId").toString() );
+           session1.sendMessage(new TextMessage(Json.YouWinFight().toString()));
            session2.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-
+           object.put("PlayerId" , "NO");
+           PlayerDead(player2 , player1 , Map,object);
+           UpdateAllPlayers(player2.GetMoney(),object.get("GameId").toString() );
 
        }
        else if(player1.getMoney() + player1.getItems().size()*10 < player2.getMoney() + player2.getItems().size()*10){
 
 
-           PlayerDead(player1 , player2 ,Map);
-           UpdateAllPlayers(player1.GetMoney(),object.get("GameId").toString() );
+           session2.sendMessage(new TextMessage(Json.YouWinFight().toString()));
            session1.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
+           object.put("PlayerId" , "NO");
+           PlayerDead(player1 , player2 ,Map,object);
+           UpdateAllPlayers(player1.GetMoney(),object.get("GameId").toString() );
 
        }
        else{
@@ -308,15 +315,14 @@ public class Moves {
            String move1 = WebSocketHandler.RockPepper.get(player1);
            String move2 = WebSocketHandler.RockPepper.get(player2);
 
-      System.out.println(move1 + "   " + move2);
            if(move1 == null && move2 != null){
                session1.sendMessage( new TextMessage(Json.GameOverMethod().toString()));
-               PlayerDead(player1 , player2,Map);
+               PlayerDead(player1 , player2,Map, object);
                UpdateAllPlayers(player1.GetMoney(),object.get("GameId").toString() );
            }
         if(move2 == null && move1 != null){
             session2.sendMessage( new TextMessage(Json.GameOverMethod().toString()));
-            PlayerDead(player2 , player1,Map);
+            PlayerDead(player2 , player1,Map, object);
             UpdateAllPlayers(player2.GetMoney(),object.get("GameId").toString() );
         }
         if(move2 == null && move1 == null){
@@ -328,58 +334,59 @@ public class Moves {
     if (move1 != null && move2 != null) {
       if (move1.equals(move2)) {
         TextMessage message1 = new TextMessage(Json.FightMethod().toString());
-        session1.sendMessage(message1);
-        session2.sendMessage(message1);
+          WebSocketHandler.Players.get(object.get("PlayerId").toString()).sendMessage(message1);
       } else if (move1.equals("Rock")) {
         if (move2.equals("Scissor")) {
-          session2.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-          PlayerDead(player2, player1, Map);
+          PlayerDead(player2, player1, Map, object);
           UpdateAllPlayers(player2.GetMoney(), object.get("GameId").toString());
 
         } else {
-          session1.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-          PlayerDead(player1, player2, Map);
+          PlayerDead(player1, player2, Map, object);
           UpdateAllPlayers(player1.GetMoney(), object.get("GameId").toString());
         }
       } else if (move1.equals("Scissor")) {
         if (move2.equals("Pepper")) {
-          session2.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-          PlayerDead(player2, player1, Map);
+          PlayerDead(player2, player1, Map, object);
           UpdateAllPlayers(player2.GetMoney(), object.get("GameId").toString());
 
         } else {
-          session1.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-          PlayerDead(player1, player2, Map);
+          PlayerDead(player1, player2, Map, object);
           UpdateAllPlayers(player1.GetMoney(), object.get("GameId").toString());
         }
       } else if (move1.equals("Pepper")) {
         if (move2.equals("Rock")) {
-          session2.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-          PlayerDead(player2, player1, Map);
+          PlayerDead(player2, player1, Map, object);
           UpdateAllPlayers(player2.GetMoney(), object.get("GameId").toString());
 
         } else {
-          session1.sendMessage(new TextMessage(Json.GameOverMethod().toString()));
-          PlayerDead(player1, player2, Map);
+          PlayerDead(player1, player2, Map , object);
           UpdateAllPlayers(player1.GetMoney(), object.get("GameId").toString());
         }
       }
 }
    }
 
-   public void PlayerDead(Player player1, Player player2 , MapGame mapGame) throws IOException {
+   public void PlayerDead(Player player1, Player player2 , MapGame mapGame , JsonObject object) throws IOException {
        WebSocketSession session1 = WebSocketHandler.Players.get(player2.getClientId());
 
-
-       mapGame.getPeople().put(player1.GetCurrentRoom() , player1);
-       mapGame.getHere().put(player1.getCurrentRoom() ,
-               mapGame.getHere().get(player1.getCurrentRoom()) - 1);
+       mapGame.getPeople().put(player2.GetCurrentRoom(), player2);
+       mapGame.getHere()
+               .put(player1.getCurrentRoom(), 1);
+    System.out.println(mapGame.getHere().get(player1.getCurrentRoom()));
        Map<Integer , Integer> mp =  player1.getItems();
        for (Map.Entry<Integer, Integer> set : mp.entrySet()) {
            player2.getItems().put(set.getKey(), set.getValue());
        }
        session1.sendMessage(new TextMessage(Json.PlayerItems(player2).toString()));
        WebSocketHandler.PlayersByGame.get(mapGame.getGameId()).remove(player1);
+       if(player1.getClientId().equals(object.get("PlayerId").toString())){
+           WebSocketHandler.Players.get(object.get("PlayerId").toString()).sendMessage(new
+                   TextMessage(Json.GameOverMethod().toString()));
+    }
+       if(player2.getClientId().equals(object.get("PlayerId").toString())){
+           WebSocketHandler.Players.get(object.get("PlayerId").toString()).sendMessage(new
+                   TextMessage(Json.YouWinFight().toString()));
+       }
 
    }
 

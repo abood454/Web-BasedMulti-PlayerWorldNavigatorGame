@@ -2,6 +2,7 @@ package JSON;
 
 import CoreGame.Player;
 import CoreGame.Room;
+import com.github.cliftonlabs.json_simple.JsonObject;
 import com.google.gson.Gson;
 import org.json.simple.JSONObject;
 
@@ -102,6 +103,7 @@ public class JsonMaker {
     return obj;
   }
 
+
   public JSONObject GameOverMethod() {
 
     JSONObject obj = new JSONObject();
@@ -172,4 +174,22 @@ public class JsonMaker {
 
     return obj;
   }
+
+  public JSONObject YouWinFight(){
+    JSONObject obj = new JSONObject();
+
+    obj.put("Method", "YouWinFight");
+
+    return obj;
+  }
+
+  public JSONObject ThereIsFight(){
+
+    JSONObject obj = new JSONObject();
+
+    obj.put("Method", "ThereIsFight");
+
+    return obj;
+  }
+
 }

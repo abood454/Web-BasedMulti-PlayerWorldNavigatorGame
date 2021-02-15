@@ -1,6 +1,8 @@
 package websocketdemo;
 
-import CoreGame.*;
+import CoreGame.MapGame;
+import CoreGame.MapGenerator;
+import CoreGame.Player;
 import JSON.JsonMaker;
 import Operation.Moves;
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -45,7 +47,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     } else if (object.get("Method").equals("JoinGame")) {
       JoinGame(session, object);
     } else if (object.get("Method").equals("ReJoin")) {
-        Operations.ReJoin(session, object);
+      Operations.ReJoin(session, object);
     } else {
       PlayerActions(session, object);
     }
@@ -82,12 +84,11 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
     if (object.get("Test").equals("No")) {
       mapGenerator.Generate(NewGame);
-      mapGenerator.AddPlayer(PlayersObject.get(object.get("PlayerId").toString()) ,NewGame);
+      mapGenerator.AddPlayer(PlayersObject.get(object.get("PlayerId").toString()), NewGame);
+    } else {
+      mapGenerator.Test(NewGame);
+      mapGenerator.AddPlayerTest(PlayersObject.get(object.get("PlayerId").toString()), NewGame);
     }
-    else {
-      Test(NewGame);
-      AddPlayer(PlayersObject.get(object.get("PlayerId").toString()), NewGame);
-        }
     Maps.put(Game, NewGame);
     Host.put(object.get("PlayerId").toString(), Game);
   }
@@ -100,11 +101,16 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         e.printStackTrace();
       }
 
-      AddPlayer(
-          PlayersObject.get(object.get("PlayerId").toString()),
-          Maps.get(object.get("GameId").toString()));
-    }
-    else {
+      if ( Maps.get(object.get("GameId").toString()).getRooms().size() > 20) {
+        mapGenerator.AddPlayer(
+            PlayersObject.get(object.get("PlayerId").toString()),
+            Maps.get(object.get("GameId").toString()));
+      } else {
+        mapGenerator.AddPlayerTest(
+            PlayersObject.get(object.get("PlayerId").toString()),
+            Maps.get(object.get("GameId").toString()));
+      }
+    } else {
       try {
         session.sendMessage(new TextMessage(Json.ItStarted().toString()));
       } catch (IOException e) {
@@ -119,7 +125,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
       if (object.get("Method").equals("Forward")) {
         Operations.Forward(session, object);
 
-        if (GamesRunNow.contains(object.get("GameId").toString())) Operations.Structure(session, object);
+        if (GamesRunNow.contains(object.get("GameId").toString()))
+          Operations.Structure(session, object);
 
       } else if (object.get("Method").equals("Buy")) {
         Operations.BuyFromSeller(session, object);
@@ -152,72 +159,5 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         Operations.DropAndLeave(session, object);
       }
     }
-  }
-
-  void Test(MapGame M) {
-    Room R1 = new Room(), R2 = new Room(), R3 = new Room(), R4 = new Room(), R5 = new Room();
-    Seller s1 = new Seller();
-    s1.AddKey(2, 50);
-    Door D = new Door(true, -1), D2 = new Door(true, -1);
-    Chest c1 = new Chest.Builder(-1, false).AddGold(50.0).build();
-    R1.SetTheEastWall(D);
-    R1.SetTheWestWall(s1);
-    R1.SetTheNorthWall(c1);
-    R1.SetTheSouthWall(D2);
-    M.AddRoom(R1);
-    // R3
-    Seller s2 = new Seller();
-    s2.AddKey(1, 50);
-    R3.SetTheSouthWall(s2);
-    R3.SetTheNorthWall(D2);
-    M.AddRoom(R3);
-
-    ///////////////////////////////
-    Door D3 = new Door(true, -1);
-    Painting p1 = new Painting(false, 0, 50);
-    R2.SetTheWestWall(D);
-    R2.SetTheNorthWall(p1);
-    R2.SetTheEastWall(D3);
-    M.AddRoom(R2);
-    ////////////////////////////////
-    Chest c2 = new Chest.Builder(-1, false).AddGold(100.0).build();
-    Chest c3 = new Chest.Builder(3, true).AddKey(2).build();
-    Mirror m1 = new Mirror(false, 0, 0, true);
-    R4.SetTheNorthWall(c2);
-    R4.SetTheEastWall(c3);
-    R4.SetTheSouthWall(m1);
-    R4.SetTheWestWall(D3);
-    M.AddRoom(R4);
-    /////////////////////////////////////////////////////////
-    R5.SetDark(true);
-    Door D4 = new Door(false, 3);
-    M.getWinningDoors().put(D4, 1);
-
-    R5.SetTheSouthWall(D4);
-    R2.SetTheSouthWall(D4);
-    M.AddRoom(R5);
-    ///////////////////////////////////////////////////////////
-
-    M.MakePairRoom(D, R1.GetRoomNumber(), R2.GetRoomNumber());
-    M.MakePairRoom(D2, R1.GetRoomNumber(), R3.GetRoomNumber());
-    M.MakePairRoom(D3, R2.GetRoomNumber(), R4.GetRoomNumber());
-    M.MakePairRoom(D4, R5.GetRoomNumber(), R2.GetRoomNumber());
-  }
-
-  public void AddPlayer(Player player, MapGame map) {
-    System.out.println(map);
-    map.AddPlayer(player);
-    Random rand = new Random();
-    int int_random = rand.nextInt(map.getRooms().size() - 1);
-    if (map.getPlayers().size() == 1) {
-      player.ChangeCurrentRoom(map.getRooms().get(0));
-      map.getPeople().put(map.getRooms().get(0), player);
-      map.getHere().put(map.getRooms().get(0),1);
-    } else {
-      player.ChangeCurrentRoom(map.getRooms().get(1));
-      map.getPeople().put(map.getRooms().get(1), player);
-      map.getHere().put(map.getRooms().get(1),1);
-    }
-
   }
 }
